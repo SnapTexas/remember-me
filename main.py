@@ -1,6 +1,7 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse,JSONResponse
-from pydantic import BaseModel,EmailStr,Field,field_validator
+from fastapi import FastAPI,Request,Response,Form
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel,EmailStr,Field,field_validator,ValidationError
 from typing import Type,Union
 from typing_extensions import Annotated
 
@@ -12,9 +13,8 @@ max_pass_len=10
 
 
 
-Username=Annotated[str,Field(min_length=4,max_length=20,pattern=r'^(?=.*[0-9])(?=.*[!@#$%^&*]).+$')]
+Username=Annotated[str,Field(min_length=4,max_length=20)]
 Password=Annotated[str,Field(min_length=6,max_length=10)]
-
 
 
 def validate_password(password:str):
@@ -23,18 +23,67 @@ def validate_password(password:str):
     pass
 
     return password
-class login(BaseModel):
+class login_rule(BaseModel):
     username:Union[EmailStr,Username]    
     password:str
 
-class sign_up(BaseModel):
+class sign_up_rule(BaseModel):
     email:EmailStr
     username:Username
-    password:str
-    confirm_password:str
+    password:Password
+    confirm_password:Password
+
+templates= Jinja2Templates(directory="templates")
+
+@app.get("/login")
+async def load_login_page(request:Request)->Response:
+    return templates.TemplateResponse("login.html",{"request":request})
+
+@app.get("/signup")
+async def load_signup_page(request:Request)->Response:
+    return templates.TemplateResponse("signup.html",{"request":request})
 
 
-@app.get("/")
-async def home():
-    return JSONResponse(status_code=200,content={"data":"hello world"})
+def validate_login(username,password):
+    try:
+        return login_rule(username=username,password=password)
+    except ValidationError as e:
+        print(e.errors()) 
+    
+@app.post("/login")
+async def login_user(response:Response,username:str =Form(...),password:str=Form(...)):
+    
+    valid_username_rules=validate_login(username,password)
+    
+    
+    print(valid_username_rules)
+    if username == "snap00989800" and password == "1234567890" and valid_username_rules:
+        return JSONResponse(content={"Login":True},status_code=200)
+    return JSONResponse(content={"Login":False},status_code=401)
 
+def validate_signup(username,password,confirm_password,email):
+    try:
+        return sign_up_rule(username=username,
+                            password=password,
+                            email=email,
+                            confirm_password=confirm_password)
+    except ValidationError as e:
+        print(e.errors()) 
+
+@app.post("/signup")
+async def signup_user(response:Response,
+                      username:str =Form(...),
+                      password:str=Form(...),
+                      confirm_password:str=Form(...),
+                      email:str=Form(...)):
+    
+    valid_signup_attempt=validate_signup(username=username,
+                                         password=password,
+                                         confirm_password=confirm_password,
+                                         email=email)
+    print(valid_signup_attempt)
+
+    if valid_signup_attempt:
+        return JSONResponse(content={"Signup":True},status_code=200)
+    return JSONResponse(content={"Signup":False},status_code=401)
+    
