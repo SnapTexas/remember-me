@@ -1,21 +1,18 @@
 from fastapi import FastAPI,Request,Response,Form
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel,EmailStr,Field,field_validator,ValidationError
-from typing import Type,Union
-from typing_extensions import Annotated
 
+from pydantic import Field,field_validator,ValidationError
+
+from main_stuff.models import login_rule,sign_up_rule
+from main_stuff.database import SessionLocal
 app=FastAPI()
 
 #later use env
 min_pass_len=6
 max_pass_len=10
 
-
-
-Username=Annotated[str,Field(min_length=4,max_length=20)]
-Password=Annotated[str,Field(min_length=6,max_length=10)]
-
+db=SessionLocal()
 
 def validate_password(password:str):
     if len(password)<min_pass_len or len(password)>max_pass_len:
@@ -23,15 +20,6 @@ def validate_password(password:str):
     pass
 
     return password
-class login_rule(BaseModel):
-    username:Union[EmailStr,Username]    
-    password:str
-
-class sign_up_rule(BaseModel):
-    email:EmailStr
-    username:Username
-    password:Password
-    confirm_password:Password
 
 templates= Jinja2Templates(directory="templates")
 
@@ -66,7 +54,7 @@ def validate_signup(username,password,confirm_password,email):
         return sign_up_rule(username=username,
                             password=password,
                             email=email,
-                            confirm_password=confirm_password)
+                            confirm_password=confirm_password) and (password==confirm_password)
     except ValidationError as e:
         print(e.errors()) 
 
@@ -82,7 +70,7 @@ async def signup_user(response:Response,
                                          confirm_password=confirm_password,
                                          email=email)
     print(valid_signup_attempt)
-
+    db.query()
     if valid_signup_attempt:
         return JSONResponse(content={"Signup":True},status_code=200)
     return JSONResponse(content={"Signup":False},status_code=401)
