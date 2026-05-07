@@ -17,7 +17,7 @@ main_stuff.database_models.Base.metadata.create_all(bind=engine)
 min_pass_len=6
 max_pass_len=10
 
-#db=SessionLocal()
+db=SessionLocal()
 
 
 
@@ -32,7 +32,7 @@ templates= Jinja2Templates(directory="templates")
 
 @app.get("/login")
 async def load_login_page(request:Request)->Response:
-    return templates.TemplateResponse("login.html",{"request":request})
+    return templates.TemplateResponse(request=request,name="login.html",context={"request":request})
 
 @app.get("/signup")
 async def load_signup_page(request:Request)->Response:
@@ -77,7 +77,7 @@ async def signup_user(response:Response,
                                          confirm_password=confirm_password,
                                          email=email)
     print(valid_signup_attempt)
-    db.query()
+    #db.query()
     if valid_signup_attempt:
         return JSONResponse(content={"Signup":True},status_code=200)
     return JSONResponse(content={"Signup":False},status_code=401)
