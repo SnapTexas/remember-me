@@ -5,7 +5,7 @@ from dotenv import load_dotenv,find_dotenv
 
 path=find_dotenv(".env1")
 load_dotenv(path)
-db_url=str(os.getenv("supabase_direct_connect_url"))
+db_url=str(os.getenv("DATABASE_URL"))
 print(db_url)
 engine=create_engine(url=db_url)
 SessionLocal = sessionmaker(

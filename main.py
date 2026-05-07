@@ -3,16 +3,23 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import Field,field_validator,ValidationError
-
+from main_stuff.database import engine
 from main_stuff.models import login_rule,sign_up_rule
 from main_stuff.database import SessionLocal
+import main_stuff.database_models
+
+
 app=FastAPI()
+
+main_stuff.database_models.Base.metadata.create_all(bind=engine)
 
 #later use env
 min_pass_len=6
 max_pass_len=10
 
-db=SessionLocal()
+#db=SessionLocal()
+
+
 
 def validate_password(password:str):
     if len(password)<min_pass_len or len(password)>max_pass_len:
